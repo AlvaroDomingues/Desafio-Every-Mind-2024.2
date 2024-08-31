@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef, FormEvent } from 'react'
-import { FiTrash } from 'react-icons/fi'
+import { FiTrash, FiEdit } from 'react-icons/fi'
 import { api } from './services/api'
 
 interface CustomerProps{
   id: string;
   name: string;
-  email: string;
-  status: boolean;
+  price: number;
+  description: string;
   created_at: string;
 }
 
@@ -15,7 +15,8 @@ export default function App(){
 
   const [ customers, setCustomers ] = useState<CustomerProps[]>([])
   const nameRef = useRef<HTMLInputElement | null>(null)
-  const emailRef = useRef<HTMLInputElement | null>(null)
+  const priceRef = useRef<HTMLInputElement | null>(null)
+  const descriptionRef = useRef<HTMLInputElement | null>(null)
  
   useEffect(() => {
     loadCustomers();
@@ -29,17 +30,19 @@ export default function App(){
   async function handleSubmit(event: FormEvent){
     event.preventDefault()
 
-    if (!nameRef.current?.value || !emailRef.current?.value) return;
+    if (!nameRef.current?.value || !priceRef.current?.value || !descriptionRef.current?.value) return;
 
     const response = await api.post("/customer", {
       name: nameRef.current?.value,
-      email: emailRef.current?.value 
+      price: parseFloat(priceRef.current?.value),
+      description: descriptionRef.current?.value 
     })
 
     setCustomers(allCustomers => [...allCustomers, response.data])
 
     nameRef.current.value = ""
-    emailRef.current.value = ""
+    priceRef.current.value = ""
+    descriptionRef.current.value = ""
   }
 
   async function handleDelete(id: string) {
@@ -58,13 +61,36 @@ export default function App(){
     }
   }
 
+  async function handleUpdate(id: string) {
+    try{
+      if (!nameRef.current?.value || !priceRef.current?.value || !descriptionRef.current?.value) return;
+
+      const response = await api.post("/editcustomer",{
+        id: id,
+        name: nameRef.current?.value,
+        price: parseFloat(priceRef.current?.value),
+        description: descriptionRef.current?.value
+      })
+
+      const allCustomers = customers.filter( (customer) => customer.id !== id)
+      console.log(response.data)
+      setCustomers( [...allCustomers, response.data])
+      nameRef.current.value = ""
+      priceRef.current.value = ""
+      descriptionRef.current.value = ""
+
+    }catch(err){
+      console.log(err)
+    }
+  }
+
 
   return (
     <div className="w-full min-h-screen bg-gray-900 flex justify-center px-4">
 
       <main className="my-10 w-full md:max-w-2xl">
 
-        <h1 className="text-4xl font-medium text-white">Clientes</h1>
+        <h1 className="text-4xl font-medium text-white">Lista de Produtos</h1>
 
         <form className="flex flex-col my-6" onSubmit={handleSubmit}>
 
@@ -78,10 +104,17 @@ export default function App(){
            />
           
           <input 
-          type="email"
-          placeholder="Digite seu email aqui..."
+          type="price"
+          placeholder="Digite o preço aqui..."
           className="w-full mb-5 p-2 rounded"
-          ref ={emailRef}
+          ref ={priceRef}
+           />
+
+          <input 
+          type="price"
+          placeholder="Digite a description aqui..."
+          className="w-full mb-5 p-2 rounded"
+          ref ={descriptionRef}
            />
 
            <input 
@@ -100,13 +133,20 @@ export default function App(){
                 className='w-full bg-white rounded p-2 relative hover:scale-105 duration-200'>
             
                 <p><span className="font-medium">Nome:</span>{customer.name}</p>
-                <p><span className="font-medium">Email:</span>{customer.email}</p>
-                <p><span className="font-medium">Status:</span>{customer.status ? "Ativo" : "Inativo"}</p>
+                <p><span className="font-medium">Email:</span>{customer.price}</p>
+                <p><span className="font-medium">Descrição:</span>{customer.description}</p>
             
                 <button className='bg-red-500 w-7 h-7 flex items-center justify-center rounded-lg absolute right-0 -top-2'
                 onClick={ () => handleDelete(customer.id) }>
             
                 <FiTrash size={18} color='white'/>
+            
+                </button>
+
+                <button className='bg-blue-500 w-7 h-7 flex items-center justify-center rounded-lg absolute right-0 -bottom-0'
+                onClick={ () => handleUpdate(customer.id) }>
+            
+                <FiEdit size={18} color='white'/>
             
                 </button>
                 </article>
